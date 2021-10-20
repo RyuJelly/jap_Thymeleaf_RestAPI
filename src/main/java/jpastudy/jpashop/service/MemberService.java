@@ -30,4 +30,9 @@ public class MemberService {
         memberRepository.save(member);
         return member.getId();
     }
+
+    public List<Member> findMembers() {
+        return memberRepository.findAll();
+    }
+
 }
