@@ -38,7 +38,7 @@ class OrderServiceTest {
         Long orderId = orderService.order(member.getId(), item.getId(), orderCnt);
 
         OrderSearch search = new OrderSearch();
-        search.setMeberName("몽");
+        search.setMemberName("몽");
         search.setOrderStatus(OrderStatus.ORDER);
         List<Order> orders = orderService.findOrders(search);
         assertEquals("검색된 Order 개수", 1, orders.size());

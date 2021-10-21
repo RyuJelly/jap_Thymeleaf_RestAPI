@@ -36,7 +36,7 @@ public class OrderRepository {
                     .from(order)
                     .join(order.member, member)
                     .where(statusEq(orderSearch.getOrderStatus()),
-                            nameLike(orderSearch.getMeberName()))
+                            nameLike(orderSearch.getMemberName()))
                     .limit(1000)
                     .fetch();
     }
