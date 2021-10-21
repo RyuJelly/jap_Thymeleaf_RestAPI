@@ -29,4 +29,14 @@ public class ItemService {
 
         return itemRepository.findOne(itemId);
     }
+
+    //Dirty Checking(변경감지)을 사용한 update
+    @Transactional
+    public void updateItem(Long id, String name, int price) {
+        //영속성컨텍스트에 저장된 Item 먼저 조회
+        Item item = itemRepository.findOne(id);
+        //setter method만 호출해도 테이블의 데이터가 갱샌되어진다. <- Dirty Checking
+        item.setName(name);
+        item.setPrice(price);
+    }
 }

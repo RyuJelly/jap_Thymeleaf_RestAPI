@@ -8,6 +8,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import javax.validation.Valid;
@@ -47,4 +49,36 @@ public class ItemController {
         return "items/itemList";
     }
 
+    @GetMapping(value = "/items/{itemId}/edit")
+    public String updateItemForm(@PathVariable("itemId") Long itemId, Model model) {
+        Book item = (Book) itemService.findOne(itemId);
+        BookForm booForm = new BookForm();
+        booForm.setId(item.getId());
+        booForm.setName(item.getName());
+        booForm.setPrice(item.getPrice());
+        booForm.setStockQuantity(item.getStockQuantity());
+        booForm.setAuthor(item.getAuthor());
+        booForm.setIsbn(item.getIsbn());
+        model.addAttribute("bookForm", booForm);
+        return "items/updateItemForm";
+    }
+
+//    @PostMapping(value = "/items/{itemId}/edit")
+    public String updateItem(@ModelAttribute("bookForm") BookForm form) {
+        Book book = new Book();
+        book.setId(form.getId());
+        book.setName(form.getName());
+        book.setPrice(form.getPrice());
+        book.setStockQuantity(form.getStockQuantity());
+        book.setAuthor(form.getAuthor());
+        book.setIsbn(form.getIsbn());
+        itemService.saveItem(book);
+        return "redirect:/items";
+    }
+
+    @PostMapping(value = "/items/{itemId}/edit")
+    public String updateItemDirtyChecking(@ModelAttribute("bookForm") BookForm form){
+        itemService.updateItem(form.getId(), form.getName(), form.getPrice());
+        return "redirect:/items";
+    }
 }
