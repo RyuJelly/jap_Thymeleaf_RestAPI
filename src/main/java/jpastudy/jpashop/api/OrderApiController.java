@@ -2,9 +2,12 @@ package jpastudy.jpashop.api;
 
 import jpastudy.jpashop.domain.*;
 import jpastudy.jpashop.repository.OrderRepository;
+import jpastudy.jpashop.repository.order.query.OrderQueryDto;
+import jpastudy.jpashop.repository.order.query.OrderQueryRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
@@ -20,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor
 public class OrderApiController {
     private final OrderRepository orderRepository;
+    private final OrderQueryRepository orderQueryRepository;
 
     /**
      * V1: 엔티티를 API에 직접 노출하는 방식
@@ -60,12 +64,38 @@ public class OrderApiController {
     @GetMapping("/api/v3/orders")
     public List<OrderDto> ordersV3() {
         List<Order> orders = orderRepository.findAllWithItem();
+        orders.forEach(System.out::println);
+//        orders.forEach(order -> System.out.println(order));
         List<OrderDto> result = orders.stream()
                 .map(o -> new OrderDto(o))
                 .collect(toList());
         return result;
     }
 
+    /**
+     * V3.1 : 엔티티를 DTO로 변환해서 노출, Fetch Join을 사용해서 성능 최적화
+     * ToMany 관계인 엔티티를 가져올때 페이징 처리 되지 않는 문제를 해결하기 위해서
+     * 1) ToOne 관계인 엔티티는 Fetch Join으로 가져오고
+     * 2) ToMany 관계인 엔티티는 hibernate.default_batch_fetch_size 설정하기
+     */
+    @GetMapping("/api/v3.1/orders")
+    public List<OrderDto> ordersV3_Paging(
+            @RequestParam(value = "offset", defaultValue = "0") int offset,
+            @RequestParam(value = "limit", defaultValue = "1") int limit) {
+        List<Order> orderList = orderRepository.findAllWithMemberDelivery(offset, limit);
+        List<OrderDto> orderDtoList = orderList.stream()  //Stream<Order>
+                .map(order -> new OrderDto(order))  //Stream<OrderDto>
+                .collect(toList());//List<OrderDto>
+        return orderDtoList;
+    }
+
+    /**
+     * V4: 쿼리를 수행할 때 DTO 저장했기 때문에 그대로 사용
+     */
+    @GetMapping("/api/v4/orders")
+    public List<OrderQueryDto> ordersV4() {
+        return orderQueryRepository.findOrdersQueryDtos();
+    }
 
     //--------- 응답과 요청에 사용할 DTO Inner Class 선언
     @Data
@@ -75,7 +105,7 @@ public class OrderApiController {
         private int count; //주문 수량
 
         public OrderItemDto(OrderItem orderItem) {
-            itemName = orderItem.getItem().getName();
+            itemName = orderItem.getItem().getName();   //Lazy loading 초기화
             orderPrice = orderItem.getOrderPrice();
             count = orderItem.getCount();
         }
@@ -92,12 +122,12 @@ public class OrderApiController {
 
         public OrderDto(Order order) {
             orderId = order.getId();
-            name = order.getMember().getName();
+            name = order.getMember().getName(); //Lazy loading 초기화
             orderDate = order.getOrderDate();
             orderStatus = order.getStatus();
-            address = order.getDelivery().getAddress();
+            address = order.getDelivery().getAddress(); //Lazy loading 초기화
 
-            orderItems = order.getOrderItems()
+            orderItems = order.getOrderItems()  //Lazy loading 초기화
                             .stream()     //Stream<OrderItem>
                             .map(orderItem -> new OrderItemDto(orderItem))  //Stream<OrderItemDto>
                             .collect(toList());  //List<OderItemDto>
